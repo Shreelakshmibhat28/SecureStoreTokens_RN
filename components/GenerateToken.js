@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import * as LocalAuthentication from 'expo-local-authentication';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -9,9 +10,35 @@ export default function GenerateToken() {
   const [generatedToken, setGeneratedToken] = useState(null);
   const [message, setMessage] = useState('');
 
+  const authenticateUser = async () => {
+    const hasHardware = await LocalAuthentication.hasHardwareAsync();
+    if (!hasHardware) {
+      Alert.alert('Error', 'Biometric authentication is not supported on this device.');
+      return false;
+    }
+
+    const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+    if (!isEnrolled) {
+      Alert.alert('Error', 'No biometric authentication methods are enrolled.');
+      return false;
+    }
+
+    const result = await LocalAuthentication.authenticateAsync({
+      promptMessage: 'Authenticate to proceed',
+    });
+
+    return result.success;
+  };
+
   const generateAndStoreToken = async () => {
     if (!customId.trim()) {
       setMessage('Please enter a valid ID.');
+      return;
+    }
+
+    const isAuthenticated = await authenticateUser();
+    if (!isAuthenticated) {
+      setMessage('Authentication failed. Token generation aborted.');
       return;
     }
 

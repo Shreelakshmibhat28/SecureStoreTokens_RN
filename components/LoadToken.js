@@ -1,14 +1,41 @@
 import React, { useState } from 'react';
-import { View, TextInput, Button, Text, StyleSheet } from 'react-native';
+import { View, TextInput, Button, Text, StyleSheet, Alert } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import * as LocalAuthentication from 'expo-local-authentication';
 
 export default function LoadToken() {
   const [customId, setCustomId] = useState('');
   const [message, setMessage] = useState('');
 
+  const authenticateUser = async () => {
+    const hasHardware = await LocalAuthentication.hasHardwareAsync();
+    if (!hasHardware) {
+      Alert.alert('Error', 'Biometric authentication is not supported on this device.');
+      return false;
+    }
+
+    const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+    if (!isEnrolled) {
+      Alert.alert('Error', 'No biometric authentication methods are enrolled.');
+      return false;
+    }
+
+    const result = await LocalAuthentication.authenticateAsync({
+      promptMessage: 'Authenticate to load token',
+    });
+
+    return result.success;
+  };
+
   const loadToken = async () => {
     if (!customId.trim()) {
       setMessage('Please enter an ID to load token.');
+      return;
+    }
+
+    const isAuthenticated = await authenticateUser();
+    if (!isAuthenticated) {
+      setMessage('Authentication failed. Cannot load token.');
       return;
     }
 
