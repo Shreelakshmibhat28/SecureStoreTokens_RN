@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { View, TextInput, Button, Text, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function GenerateToken() {
   const [customId, setCustomId] = useState('');
+  const [generatedToken, setGeneratedToken] = useState(null);
   const [message, setMessage] = useState('');
 
   const generateAndStoreToken = async () => {
@@ -12,50 +14,64 @@ export default function GenerateToken() {
       setMessage('Please enter a valid ID.');
       return;
     }
-  
+
     try {
       const newToken = uuidv4();
       await SecureStore.setItemAsync(customId, newToken);
+      setGeneratedToken(newToken);
       console.log(`Token stored for ID "${customId}":`, newToken);
-      setMessage(`Token successfully generated for ID "${customId}".`);
+      setMessage(`Token successfully stored for ID "${customId}".`);
     } catch (error) {
-      console.error('Error storing token:', error);
-      setMessage('Failed to generate token.');
+      console.error('Error generating or storing token:', error);
+      setMessage('Failed to generate/store token.');
     }
   };
-  
+
   return (
-    <View style={styles.section}>
-      <Text style={styles.heading}>Generate & Store Token</Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>Generate & Store Token</Text>
       <TextInput
-        placeholder="Enter ID"
+        style={styles.input}
+        placeholder="Enter Custom ID"
         value={customId}
         onChangeText={setCustomId}
-        style={styles.input}
       />
-      <Button title="Generate Token" onPress={generateAndStoreToken} />
+      <Button title="Generate & Store Token" onPress={generateAndStoreToken} />
+      {generatedToken && (
+        <Text style={styles.tokenText}>Last Generated Token: {generatedToken}</Text>
+      )}
       {message ? <Text style={styles.message}>{message}</Text> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  section: {
-    marginBottom: 40,
+  container: {
+    margin: 20,
+    padding: 20,
+    borderRadius: 10,
+    backgroundColor: '#fff',
+    elevation: 2,
   },
-  heading: {
+  title: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   input: {
     borderWidth: 1,
     padding: 10,
-    marginBottom: 10,
     borderRadius: 5,
+    marginBottom: 10,
+    borderColor: '#ccc',
+  },
+  tokenText: {
+    marginTop: 10,
+    color: 'green',
+    fontSize: 14,
   },
   message: {
     marginTop: 10,
-    color: 'green',
+    color: 'blue',
   },
 });
